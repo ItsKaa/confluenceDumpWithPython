@@ -76,13 +76,13 @@ def mk_outdirs(arg_outdir="output", arg_page_id = None, arg_confluence_compatibl
         os.mkdir(arg_outdir)
 
     if not os.path.exists(outdir_attach):
-        os.mkdir(outdir_attach)
+        os.makedirs(outdir_attach)
 
     if not os.path.exists(outdir_emoticons):
-        os.mkdir(outdir_emoticons)
+        os.makedirs(outdir_emoticons)
 
     if not os.path.exists(outdir_styles):
-        os.mkdir(outdir_styles)
+        os.makedirs(outdir_styles)
 
     if not os.path.exists(outdir_styles + '/confluence.css'):
         shutil.copy(f"{script_dir}/styles/confluence.css", f"{outdir_styles}confluence.css")
