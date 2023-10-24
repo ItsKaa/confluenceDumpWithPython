@@ -28,6 +28,8 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 attach_dir = "_images/"
 emoticons_dir = "_images/"
 styles_dir = "_static/"
+confluence_css = "confluence.css"
+confluence_css_output = confluence_css
 
 def set_variables(arg_page_id = None, arg_confluence_compatible = False):
     """Set variables for export folders"""
@@ -35,11 +37,13 @@ def set_variables(arg_page_id = None, arg_confluence_compatible = False):
     global attach_dir;
     global emoticons_dir;
     global styles_dir;
+    global confluence_css_output
 
     if arg_confluence_compatible:
         attach_dir = "attachments/"
         emoticons_dir = "images/icons/emoticons/"
         styles_dir = "styles/"
+        confluence_css_output = "site.css"
         
     dict_vars = {}
     dict_vars['attach_dir'] = attach_dir
@@ -84,8 +88,8 @@ def mk_outdirs(arg_outdir="output", arg_page_id = None, arg_confluence_compatibl
     if not os.path.exists(outdir_styles):
         os.makedirs(outdir_styles)
 
-    if not os.path.exists(outdir_styles + '/confluence.css'):
-        shutil.copy(f"{script_dir}/styles/confluence.css", f"{outdir_styles}confluence.css")
+    if not os.path.exists(outdir_styles + '/' + confluence_css_output):
+        shutil.copy(f"{script_dir}/styles/{confluence_css}", f"{outdir_styles}/{confluence_css_output}")
     return(outdir_list)
 
 def get_space_title(arg_site,arg_space_id,arg_username,arg_api_token):
@@ -388,7 +392,7 @@ def dump_html(
     my_header = (f"<html>\n"
                 f"<head>\n"
                 f"<title>{arg_title}</title>\n"
-                f"<link rel=\"stylesheet\" href=\"{styles_dir_relative}confluence.css\" type=\"text/css\" />\n"
+                f"<link rel=\"stylesheet\" href=\"{styles_dir_relative}{confluence_css_output}\" type=\"text/css\" />\n"
                 f"<meta name=\"generator\" content=\"confluenceExportHTML\" />\n"
                 f"<META http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n"
                 f"<meta name=\"ConfluencePageLabels\" content=\"{arg_page_labels}\">\n"
