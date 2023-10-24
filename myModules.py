@@ -29,15 +29,26 @@ attach_dir = "_images/"
 emoticons_dir = "_images/"
 styles_dir = "_static/"
 
-def set_variables():
+def set_variables(arg_page_id = None, arg_confluence_compatible = False):
     """Set variables for export folders"""
+    
+    global attach_dir;
+    global emoticons_dir;
+    global styles_dir;
+
+    if arg_confluence_compatible:
+        attach_dir = "attachments/"
+        emoticons_dir = "images/icons/emoticons/"
+        styles_dir = "styles/"
+        
     dict_vars = {}
-    dict_vars['attach_dir'] = "_images/"
-    dict_vars['emoticons_dir'] = "_images/"
-    dict_vars['styles_dir'] = "_static/"
-    attach_dir = "_images/"
-    emoticons_dir = "_images/"
-    styles_dir = "_static/"
+    dict_vars['attach_dir'] = attach_dir
+    dict_vars['emoticons_dir'] = emoticons_dir
+    dict_vars['styles_dir'] = styles_dir
+    
+    if arg_confluence_compatible and arg_page_id is not None:
+        dict_vars['attach_dir'] = f"{attach_dir}{arg_page_id}/"
+
     return(dict_vars)
 #
 # Create the output folders, set to match Sphynx structure
@@ -50,14 +61,17 @@ def set_dirs(arg_outdir="output"):        # setting default to output
     outdir_styles = os.path.join(arg_outdir,my_vars['styles_dir'])
     return[outdir_attach, outdir_emoticons, outdir_styles]      # returns a list
 
-def mk_outdirs(arg_outdir="output"):       # setting default to output
+def mk_outdirs(arg_outdir="output", arg_page_id = None, arg_confluence_compatible = False):       # setting default to output
     """Create the output folders"""
-    my_vars = set_variables()
+    my_vars = set_variables(arg_page_id, arg_confluence_compatible)
     outdir_list = set_dirs(arg_outdir)
     outdir_attach = outdir_list[0]
     outdir_emoticons = outdir_list[1]
     outdir_styles = outdir_list[2]
 
+    if arg_confluence_compatible and arg_page_id is not None:
+        outdir_attach = outdir_list[0] = f"{outdir_attach}{arg_page_id}/"
+        
     if not os.path.exists(arg_outdir):
         os.mkdir(arg_outdir)
 
@@ -200,7 +214,9 @@ def dump_html(
     arg_type="",
     arg_html_output=False,
     arg_rst_output=True,
-    arg_show_labels=False
+    arg_show_labels=False,
+    arg_space_pages_short={},
+    arg_confluence_compatible=False
     ):
     """Create HTML and RST files
 
@@ -229,9 +245,10 @@ def dump_html(
     if not os.path.exists(my_outdir_content):
         os.mkdir(my_outdir_content)
     #myOutdir = os.path.join(arg_outdir,str(arg_page_id) + "-" + str(arg_title))
-    my_outdirs = mk_outdirs(arg_outdir_base)        # this is for everything for _images and _static
-    my_vars = set_variables()     # create a dict with the 3 folder paths: attach, emoticons, styles
-
+    my_outdirs = mk_outdirs(arg_outdir_base, arg_page_id, arg_confluence_compatible)        # this is for everything for _images and _static
+    my_vars = set_variables(arg_page_id, arg_confluence_compatible)     # create a dict with the 3 folder paths: attach, emoticons, styles
+    
+    
     soup = bs(arg_html, "html.parser")
 
     #
@@ -250,7 +267,13 @@ def dump_html(
         pre['class'] = [c for c in pre.get('class', []) if c != 'syntaxhighlighter-pre']
 
     # continuing
-    html_file_name = (f"{arg_title}.html").replace("/","-").replace(":","-").replace(" ","_")
+    if arg_confluence_compatible:
+        # Confluence mode adds the page id to the title and replaces spaces with a dash.
+        html_file_name = (f"{arg_title}_{arg_page_id}.html").replace(" ","-").replace("+","-")
+    else:
+        html_file_name = (f"{arg_title}.html")
+
+    html_file_name = html_file_name.replace("/","-").replace(":","-").replace(" ","_")
     html_file_path = os.path.join(my_outdir_content,html_file_name)
     my_attachments = get_attachments(arg_site,arg_page_id,str(my_outdirs[0]),arg_username,arg_api_token)
     #
@@ -372,14 +395,30 @@ def dump_html(
                 f"<meta name=\"ConfluencePageID\" content=\"{arg_page_id}\">\n"
                 f"<meta name=\"ConfluencePageParent\" content=\"{arg_page_parent}\">\n"
                 f"</head>\n"
-                f"<body>\n"
-                f"<h2>{arg_title}</h2>\n"
-                f"<p>Original URL: <a href=\"{page_url}\"> {arg_title}</a><hr>\n"
     )
+    myFooter = ""
+    if arg_confluence_compatible:
+        my_header += (f"<body class=\"theme-default aui-theme-default\">\n"
+                      f"<div id=\"page\">\n"
+                      f"<div id=\"main\" class=\"aui-page-panel\">"
+                      f"<div id=\"content\" class=\"view\">"
+                      f"<div id=\"main-content\" class=\"wiki-content group\">"
+                     )
+        myFooter = (f"</div>\n"
+                    f"</div>\n"
+                    f"</div>\n"
+                    f"</div>\n"
+                    f"</body>\n"
+                   )
+    else:
+        my_header += (f"<body>\n"
+                      f"<h2>{arg_title}</h2>\n"
+                      f"<p>Original URL: <a href=\"{page_url}\"> {arg_title}</a><hr>\n"
+                     )
 
 
-    myFooter = (f"</body>\n"
-                f"</html>"
+    myFooter += (f"</body>\n"
+                 f"</html>"
     )
     #
     # At the end of the page, put a link to all attachments.

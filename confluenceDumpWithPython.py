@@ -36,6 +36,8 @@ parser.add_argument('--outdir', '-o', type=str, default='output',
                     help='Folder for export', required=False)
 parser.add_argument('--sphinx', '-x', action='store_true', default=False,
                     help='Sphinx compatible folder structure', required=False)
+parser.add_argument('--confluence', '-c', action='store_true', default=False,
+                    help='Confluence compatible folder and file naming structure', required=False)
 parser.add_argument('--tags', action='store_true', default=False,
                     help='Add labels as .. tags::', required=False)
 parser.add_argument('--html', action='store_true', default=False,
@@ -47,6 +49,10 @@ parser.add_argument('--showlabels', action='store_true', default=False,
 
 args = parser.parse_args()
 atlassian_site = args.site
+sphinx_tags = args.tags
+sphinx_compatible = args.sphinx
+confluence_compatible = args.confluence
+
 if args.mode == 'single':
     print(f"Exporting a single page (Sphinx set to {args.sphinx})")
     page_id = args.page
@@ -67,9 +73,8 @@ my_emoticons_list = []
 user_name = os.environ["atlassianUserEmail"]
 api_token = os.environ["atlassianAPIToken"]
 
-sphinx_compatible = args.sphinx
-sphinx_tags = args.tags
 print("Sphinx set to " + str(sphinx_compatible))
+print(f"Confluence compatible set to : {confluence_compatible}")
 atlassian_site = args.site
 my_outdir_base = args.outdir
 if args.mode == 'single':
@@ -99,10 +104,10 @@ if args.mode == 'single':
 #    else:
 #        my_outdir_content = my_outdir_base
     my_outdirs = []
-    my_outdirs = myModules.mk_outdirs(my_outdir_base)               # attachments, embeds, scripts
+    my_outdirs = myModules.mk_outdirs(my_outdir_base, page_id, confluence_compatible)               # attachments, embeds, scripts
     my_page_labels = myModules.get_page_labels(atlassian_site,page_id,user_name,api_token)
     print(f"Base export folder is \"{my_outdir_base}\" and the Content goes to \"{my_outdir_content}\"")
-    myModules.dump_html(atlassian_site,my_body_export_view_html,my_body_export_view_title,page_id,my_outdir_base, my_outdir_content,my_page_labels,page_parent,user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst)
+    myModules.dump_html(atlassian_site,my_body_export_view_html,my_body_export_view_title,page_id,my_outdir_base, my_outdir_content,my_page_labels,page_parent,user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst,arg_confluence_compatible=confluence_compatible)
     print("Done!")
 elif args.mode == 'space':
     ###########
@@ -168,7 +173,7 @@ elif args.mode == 'space':
             #my_body_export_view_labels = ",".join(myModules.get_page_labels(atlassian_site,p['page_id'],user_name,api_token))
             mypage_url = f"{my_body_export_view['_links']['base']}{my_body_export_view['_links']['webui']}"
             print(f"dump_html arg sphinx_compatible = {sphinx_compatible}")
-            myModules.dump_html(atlassian_site,my_body_export_view_html,my_body_export_view_title,p['page_id'],my_outdir_base,my_outdir_content,my_body_export_view_labels,p['parentId'],user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst)
+            myModules.dump_html(atlassian_site,my_body_export_view_html,my_body_export_view_title,p['page_id'],my_outdir_base,my_outdir_content,my_body_export_view_labels,p['parentId'],user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst,arg_space_pages_short=all_pages_short,arg_confluence_compatible=confluence_compatible)
     print("Done!")
 elif args.mode == 'pageprops':
     ###############
@@ -199,7 +204,7 @@ elif args.mode == 'pageprops':
         my_outdir_base = my_outdir_content
 
     my_outdirs = []
-    my_outdirs = myModules.mk_outdirs(my_outdir_base)               # attachments, embeds, scripts
+    my_outdirs = myModules.mk_outdirs(my_outdir_base, page_id, confluence_compatible)               # attachments, embeds, scripts
     # get info abbout children
     #my_page_properties_children = myModules.get_page_properties_children(atlassian_site,my_report_export_view_html,my_outdir_content,user_name,api_token)[0]          # list
     #my_page_properties_children_dict = myModules.get_page_properties_children(atlassian_site,my_report_export_view_html,my_outdir_content,user_name,api_token)[1]      # dict
@@ -241,7 +246,8 @@ elif args.mode == 'pageprops':
                 arg_type="reportchild",
                 arg_html_output=args.html,
                 arg_rst_output=args.rst,
-                arg_show_labels=args.showlabels
+                arg_show_labels=args.showlabels,
+                arg_confluence_compatible=confluence_compatible
             )                  # creates html files for every child
     myModules.dump_html(
             arg_site=atlassian_site,
@@ -259,7 +265,8 @@ elif args.mode == 'pageprops':
             arg_type="report",
             arg_html_output=args.html,
             arg_rst_output=args.rst,
-            arg_show_labels=args.showlabels
+            arg_show_labels=args.showlabels,
+            arg_confluence_compatible=confluence_compatible
         )         # finally creating the HTML for the report page
     print("Done!")
 else:
