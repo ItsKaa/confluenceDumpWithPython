@@ -401,12 +401,46 @@ def dump_html(
                 f"</head>\n"
     )
     myFooter = ""
+    
+    # Create breadcrumbs
+    breadcrumbs = []
+    if arg_confluence_compatible and arg_page_parent is not None and len(arg_space_pages_short) > 0:
+        parent_id = arg_page_parent
+        while parent_id is not None:
+            found = False
+            for space_page in arg_space_pages_short:
+                page_id = space_page['page_id']
+                page_title = space_page['pageTitle']
+                if page_id == parent_id:
+                    if arg_confluence_compatible:
+                        page_link = (f"{page_title}_{page_id}.html").replace(" ","-").replace("+","-")
+                    else:
+                        page_link = page_title + ".html"
+                    page_link = page_link.replace("/","-").replace(":","-").replace(" ","_")
+                    breadcrumbs.append({"name": page_title, "url": page_link})
+                    found = True
+                    break
+            if not found:
+                print(f"WARNING: Could not find parent page with id {parent_id} for breadcrumbs")
+                break
+            else:
+                parent_id = space_page['parentId']
+
     if arg_confluence_compatible:
+        breadcrumbs_html = "".join([('<li class="first">' if i == 0 else '<li>') + f"<span><a href=\"{x['url']}\">{x['name']}</a></span></li>" for i,x in reversed(list(enumerate(breadcrumbs)))])
         my_header += (f"<body class=\"theme-default aui-theme-default\">\n"
                       f"<div id=\"page\">\n"
-                      f"<div id=\"main\" class=\"aui-page-panel\">"
-                      f"<div id=\"content\" class=\"view\">"
-                      f"<div id=\"main-content\" class=\"wiki-content group\">"
+                      f"<div id=\"main\" class=\"aui-page-panel\">\n"
+                      f"<div id=\"main-header\">\n"
+                      f"  <div id=\"breadcrumb-section\">\n"
+                      f"    <ol id=\"breadcrumbs\">\n{breadcrumbs_html}</ol>\n"
+                      f"  </div>\n"
+                      f"  <h1 id=\"title-heading\" class=\"pagetitle\">\n"
+                      f"    <span id=\"title-text\">{arg_title}</span>\n"
+                      f"  </h1>\n"
+                      F"</div>\n"
+                      f"<div id=\"content\" class=\"view\">\n"
+                      f"<div id=\"main-content\" class=\"wiki-content group\">\n"
                      )
         myFooter = (f"</div>\n"
                     f"</div>\n"
