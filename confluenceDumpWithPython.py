@@ -95,7 +95,10 @@ if args.mode == 'single':
     page_url = f"{my_body_export_view['_links']['base']}{my_body_export_view['_links']['webui']}"
     page_parent = myModules.get_page_parent(atlassian_site,page_id,user_name,api_token)
 
-    my_outdir_base = os.path.join(my_outdir_base,f"{page_id}-{my_body_export_view_title}")        # sets outdir to path under page_name
+    if confluence_compatible:
+        my_outdir_base = os.path.join(my_outdir_base,space_key)
+    else:
+        my_outdir_base = os.path.join(my_outdir_base,f"{page_id}-{my_body_export_view_title}")        # sets outdir to path under page_name
     my_outdir_content = my_outdir_base
 
 #    if args.sphinx is False:
@@ -130,7 +133,10 @@ elif args.mode == 'space':
             space_id = n['id']
             space_name = n['name']
             current_parent = n['homepageId']
-    my_outdir_content = os.path.join(my_outdir_base,f"{space_id}-{space_name}")
+    if confluence_compatible:
+        my_outdir_content = os.path.join(my_outdir_base,space_key)
+    else:
+        my_outdir_content = os.path.join(my_outdir_base,f"{space_id}-{space_name}")
     if not os.path.exists(my_outdir_content):
         os.mkdir(my_outdir_content)
     if args.sphinx is False:
@@ -197,7 +203,10 @@ elif args.mode == 'pageprops':
     my_report_export_html_filename = f"{my_report_export_view_title}.html"
         # str(my_report_export_view_title) + '.html'
     # my outdirs
-    my_outdir_content = os.path.join(my_outdir_base,str(page_id) + "-" + str(my_report_export_view_title))
+    if confluence_compatible:
+        my_outdir_content = os.path.join(my_outdir_base,space_key)
+    else:
+        my_outdir_content = os.path.join(my_outdir_base,str(page_id) + "-" + str(my_report_export_view_title))
     #print("my_outdir_base: " + my_outdir_base)
     #print("my_outdir_content: " + my_outdir_content)
     if args.sphinx is False:
