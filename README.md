@@ -8,8 +8,8 @@ References to downloaded files will be updated to their local relative path.
 Nonetheless, the refactoring will require only 2 files and accept command-line args:
 * `myModules.py`: Contains all the required functions.
 * `confluenceDumpWithPython.py`: Script to use with the following command line args:
-  * `-m, --mode`: The export mode, `single`, `space`, `bylabel`, `pageprops` (required).
-    * Note: Only `single`, `pageprops` and `space` have been implemented so far.
+  * `-m, --mode`: The export mode, `single`, `space`, `recursive`, `bylabel`, `pageprops` (required).
+    * Note: Only `single`, `recursive`, `pageprops` and `space` have been implemented so far.
   * `-S, --site`: The Atlassian Site (required).
   * `-s, --space`: The Space Key (if needed).
   * `-p, --page`: The Page ID (if needed).
