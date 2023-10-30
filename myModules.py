@@ -160,7 +160,7 @@ def remove_illegal_characters(input):
     return re.sub(r'[^\w_\.\- ]+', '_', input)
 
 def remove_illegal_characters_html_file(input):
-    return input.replace("/","-").replace(":","-").replace(" ","_")
+    return remove_illegal_characters(input.replace("/","-").replace(":","-").replace(" ","_"))
 
 def get_attachments(arg_site,arg_page_id,arg_outdir_attach,arg_username,arg_api_token):
     my_attachments_list = []
