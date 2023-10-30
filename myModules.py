@@ -146,6 +146,16 @@ def get_page_parent(arg_site,arg_page_id,arg_username,arg_api_token):
     response = requests.get(server_url, auth=(arg_username, arg_api_token),timeout=30)
     return(response.json()['parentId'])
 
+def get_page_space_key(arg_site,arg_page_id,arg_username,arg_api_token):
+    server_url = f"https://{arg_site}.atlassian.net/wiki/rest/api/content/{arg_page_id}"
+    r_pagetree = requests.get(server_url, auth=(arg_username, arg_api_token),timeout=30)
+    return(r_pagetree.json()['space']['key'])
+
+def get_page_space_id(arg_site,arg_page_id,arg_username,arg_api_token):
+    server_url = f"https://{arg_site}.atlassian.net/wiki/rest/api/content/{arg_page_id}"
+    r_pagetree = requests.get(server_url, auth=(arg_username, arg_api_token),timeout=30)
+    return(r_pagetree.json()['space']['id'])
+
 def remove_illegal_characters(input):
     return re.sub(r'[^\w_\.\- ]+', '_', input)
 

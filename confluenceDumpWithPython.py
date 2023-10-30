@@ -94,6 +94,21 @@ if args.mode == 'single':
 
     page_url = f"{my_body_export_view['_links']['base']}{my_body_export_view['_links']['webui']}"
     page_parent = myModules.get_page_parent(atlassian_site,page_id,user_name,api_token)
+    space_key = myModules.get_page_space_key(atlassian_site,page_id,user_name,api_token)
+    all_pages_short = []
+    if confluence_compatible:
+        space_id = myModules.get_page_space_id(atlassian_site,page_id,user_name,api_token)
+        all_pages_full = myModules.get_pages_from_space(atlassian_site,space_id,user_name,api_token)
+        i = 0
+        for n in all_pages_full:
+            i = i + 1
+            all_pages_short.append({
+                'page_id' : n['id'],
+                'pageTitle' : n['title'],
+                'parentId' : n['parentId'],
+                'space_id' : n['spaceId'],
+                }
+            )
 
     if confluence_compatible:
         my_outdir_base = os.path.join(my_outdir_base,space_key)
@@ -110,7 +125,7 @@ if args.mode == 'single':
     my_outdirs = myModules.mk_outdirs(my_outdir_base, page_id, confluence_compatible)               # attachments, embeds, scripts
     my_page_labels = myModules.get_page_labels(atlassian_site,page_id,user_name,api_token)
     print(f"Base export folder is \"{my_outdir_base}\" and the Content goes to \"{my_outdir_content}\"")
-    myModules.dump_html(atlassian_site,my_body_export_view_html,my_body_export_view_title,page_id,my_outdir_base, my_outdir_content,my_page_labels,page_parent,user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst,arg_confluence_compatible=confluence_compatible)
+    myModules.dump_html(atlassian_site,my_body_export_view_html,my_body_export_view_title,page_id,my_outdir_base, my_outdir_content,my_page_labels,page_parent,user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst,arg_space_pages_short=all_pages_short,arg_confluence_compatible=confluence_compatible)
     print("Done!")
 elif args.mode == 'space':
     ###########
@@ -189,6 +204,21 @@ elif args.mode == 'pageprops':
     my_page_properties_children_dict = {}
 
     page_id = args.page
+    space_key = myModules.get_page_space_key(atlassian_site,page_id,user_name,api_token)
+    all_pages_short = []
+    if confluence_compatible:
+        space_id = myModules.get_page_space_id(atlassian_site,page_id,user_name,api_token)
+        all_pages_full = myModules.get_pages_from_space(atlassian_site,space_id,user_name,api_token)
+        i = 0
+        for n in all_pages_full:
+            i = i + 1
+            all_pages_short.append({
+                'page_id' : n['id'],
+                'pageTitle' : n['title'],
+                'parentId' : n['parentId'],
+                'space_id' : n['spaceId'],
+                }
+            )
     #
     # Get Page Properties REPORT
     #
@@ -256,6 +286,7 @@ elif args.mode == 'pageprops':
                 arg_html_output=args.html,
                 arg_rst_output=args.rst,
                 arg_show_labels=args.showlabels,
+                arg_space_pages_short=all_pages_short,
                 arg_confluence_compatible=confluence_compatible
             )                  # creates html files for every child
     myModules.dump_html(
@@ -275,6 +306,7 @@ elif args.mode == 'pageprops':
             arg_html_output=args.html,
             arg_rst_output=args.rst,
             arg_show_labels=args.showlabels,
+            arg_space_pages_short=all_pages_short,
             arg_confluence_compatible=confluence_compatible
         )         # finally creating the HTML for the report page
     print("Done!")
