@@ -17,6 +17,9 @@ Nonetheless, the refactoring will require only 2 files and accept command-line a
   * `-x, --sphinx`: The `_images` and `_static` folders are placed at the root of the export folder, instead of together with the exported HTML files.
   * `-c, --confluence`: Exports the html and rst files to the matching folder structure of the confluence html export. Files are exported to `spaceKey/` and attachments to `attachments/pageId/` as well as the other export folders.
   * `--notags`: Does not add the tags directives to the rst files (when the `sphinx-tags` addon is not used).
+  * `--loglevel`: Changes the logging level. Available levels: `critical`, `error`, `warning`, `info` or `debug`.
+  * `--logformat`: Modifies the format of the output messages. See [logging](https://docs.python.org/library/logging.html#logrecord-attributes) for more information.
+  * `--logfile`: Write the output messages to the specified file instead of the output stream. Example: `--logfile output\export.log`.
 * `updatePageLinks.py`: Update online confluence links to the local files that have been downloaded so far.
   * `--folder`: Folder containing the files to update.
   * `--test`: Instead of overwriting the original .rst files, it will create updated ones with `zout_` as a prefix.
