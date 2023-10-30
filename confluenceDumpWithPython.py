@@ -22,7 +22,7 @@ Returns:
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', '-m', dest='mode',
-                    choices=['single', 'space', 'bylabel', 'pageprops'],
+                    choices=['single', 'space', 'bylabel', 'pageprops', 'recursive'],
                     help='Chose a download mode', required=True)
 parser.add_argument('--site', '-S', type=str,
                     help='Atlassian Site', required=True)
@@ -59,6 +59,8 @@ if args.mode == 'single':
 elif args.mode == 'space':
     print(f"Exporting a whole space (Sphinx set to {args.sphinx})")
     space_key = args.space
+elif args.mode == 'recursive':
+    print(f"Exporting a single page recursively (Sphinx set to {args.sphinx})")
 elif args.mode == 'bylabel':
     print(f"Exporting all pages with a common label (Sphinx set to {args.sphinx})")
 elif args.mode == 'pageprops':
@@ -127,6 +129,88 @@ if args.mode == 'single':
     print(f"Base export folder is \"{my_outdir_base}\" and the Content goes to \"{my_outdir_content}\"")
     myModules.dump_html(atlassian_site,my_body_export_view_html,my_body_export_view_title,page_id,my_outdir_base, my_outdir_content,my_page_labels,page_parent,user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst,arg_space_pages_short=all_pages_short,arg_confluence_compatible=confluence_compatible)
     print("Done!")
+
+if args.mode == 'recursive':
+    ###############
+    ## RECURSIVE ##
+    ###############
+    page_id = args.page
+    page_name = myModules.get_page_name(atlassian_site,page_id,user_name,api_token)
+
+    my_body_export_view = myModules.get_body_export_view(atlassian_site,page_id,
+        user_name,api_token).json()
+    my_body_export_view_html = my_body_export_view['body']['export_view']['value']
+    my_body_export_view_title = my_body_export_view['title'].replace("/","-")\
+        .replace(",","").replace("&","And").replace(":","-")
+
+    server_url = f"https://{atlassian_site}.atlassian.net/wiki/api/v2/spaces/?limit=250"
+
+    page_url = f"{my_body_export_view['_links']['base']}{my_body_export_view['_links']['webui']}"
+    page_parent = myModules.get_page_parent(atlassian_site,page_id,user_name,api_token)
+    space_key = myModules.get_page_space_key(atlassian_site,page_id,user_name,api_token)
+    space_id = myModules.get_page_space_id(atlassian_site,page_id,user_name,api_token)
+    all_pages_full = myModules.get_pages_from_space(atlassian_site,space_id,user_name,api_token)
+    all_pages_short = []
+    for n in all_pages_full:
+        all_pages_short.append({
+            'page_id' : n['id'],
+            'pageTitle' : n['title'],
+            'parentId' : n['parentId'],
+            'space_id' : n['spaceId'],
+            }
+        )
+
+    if confluence_compatible:
+        my_outdir_base = os.path.join(my_outdir_base,space_key)
+    else:
+        my_outdir_base = os.path.join(my_outdir_base,f"{page_id}-{my_body_export_view_title}")        # sets outdir to path under page_name
+    my_outdir_content = my_outdir_base
+
+#    if args.sphinx is False:
+#        my_outdir_base = os.path.join(my_outdir_base,f"{page_id}-{my_body_export_view_title}")        # sets outdir to path under page_name
+#        my_outdir_content = my_outdir_base
+#    else:
+#        my_outdir_content = my_outdir_base
+    my_outdirs = []
+    my_outdirs = myModules.mk_outdirs(my_outdir_base, page_id, confluence_compatible)               # attachments, embeds, scripts
+    my_page_labels = myModules.get_page_labels(atlassian_site,page_id,user_name,api_token)
+    print(f"Base export folder is \"{my_outdir_base}\" and the Content goes to \"{my_outdir_content}\"")
+    
+    all_pages_recursive = []
+    for p in all_pages_short:
+        if p['page_id'] == str(page_id):        
+            def get_child_pages(arg_page_id):
+                children = []
+                child_pages = list(filter (lambda x: x['parentId'] == arg_page_id, all_pages_short))
+                for child_page in child_pages:
+                    # Add the children of the provided page id.
+                    children.append(child_page)
+                    # Get the children of the child page.
+                    child_page_id = child_page['page_id']
+                    child_pages = list(filter (lambda x: x['parentId'] == child_page_id, all_pages_short))
+                    [children.append(x) for x in child_pages if x not in children]
+                    # Get the recursive children of the current child page.
+                    [children.append(x) for x in get_child_pages(child_page_id) if x not in children]
+                return children
+            all_pages_recursive = get_child_pages(p['page_id'])
+            all_pages_recursive.append(p)
+
+    page_counter = 0
+    for p in all_pages_recursive:
+        page_counter = page_counter + 1
+        my_body_export_view = myModules.get_body_export_view(atlassian_site,p['page_id'],user_name,api_token).json()
+        my_body_export_view_html = my_body_export_view['body']['export_view']['value']
+        my_body_export_view_name = p['pageTitle']
+        my_body_export_view_title = p['pageTitle']
+        print()
+        print(f"Getting page #{page_counter}/{len(all_pages_short)}, {my_body_export_view_title}, {p['page_id']}")
+        my_body_export_view_labels = myModules.get_page_labels(atlassian_site,p['page_id'],user_name,api_token)
+        #my_body_export_view_labels = ",".join(myModules.get_page_labels(atlassian_site,p['page_id'],user_name,api_token))
+        mypage_url = f"{my_body_export_view['_links']['base']}{my_body_export_view['_links']['webui']}"
+        print(f"dump_html arg sphinx_compatible = {sphinx_compatible}")
+        myModules.dump_html(atlassian_site,space_key,my_body_export_view_html,my_body_export_view_title,p['page_id'],my_outdir_base,my_outdir_content,my_body_export_view_labels,p['parentId'],user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst,arg_space_pages_short=(all_pages_short if relative_links else []),arg_confluence_compatible=confluence_compatible)
+    print("Done!")
+
 elif args.mode == 'space':
     ###########
     ## SPACE ##
