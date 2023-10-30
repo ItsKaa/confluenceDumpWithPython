@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import sys
@@ -14,8 +15,19 @@ parser.add_argument('--folder', type=str, default='output',
                     help='Folder to handle', required=True)
 parser.add_argument('--test', action='store_true', default=False,
                     help='Create copies of the original files', required=False)
+parser.add_argument('--loglevel', default='debug',
+                    choices=['critical', 'error', 'warning', 'info', 'debug'],
+                    help='Provide logging level. Example --loglevel debug, default=warning')
+parser.add_argument('--logformat',
+                    help='Provide the logging format. See the documentation of the logging module for more details.')
+parser.add_argument('--logfile',
+                    help='Specifies the file that will be used for the logging rather than the standard output stream.')
 args = parser.parse_args()
-
+if args.logfile is None:
+    logging.basicConfig(level=args.loglevel.upper(), format=args.logformat)
+else:
+    logging.basicConfig(level=args.loglevel.upper(), format=args.logformat, filename=args.logfile)
+    
 site = args.site
 target_folder = args.folder
 
@@ -24,7 +36,7 @@ if args.mode == 'rst':
 elif args.mode == 'html':
     file_type = '.html'
 else:
-    print("ERROR: Invalid file-type")
+    logging.error("ERROR: Invalid file-type")
     exit(1)
 
 if file_type == '.rst':
@@ -52,7 +64,7 @@ if file_type == '.rst':
                 if ":confluencePageId:" in line:
                     my_rsts_pageid = line.split(":confluencePageId: ")[1][:-1]
                     rst_pageids.update({str(my_rsts_pageid)[:-1] : str(filename)})
-                print(f"{str(my_rsts_pageid)[:-1]} : {str(filename)}")
+                    logging.debug(f"{str(my_rsts_pageid)[:-1]} : {str(filename)}")
                     break
 
         # write the file out
@@ -102,15 +114,15 @@ if file_type == '.rst':
                             # using that pageID to match with the one in the "rst_pageids" dict
                             link_html_file = str(rst_pageids[link_pageid]).replace(".rst",".html")
                             line = line.replace(link_confluence,link_html_file)
-                        #print(f"In line {n}, replaced {link_confluence} with {link_html_file}.")
-                        #print(f"{find_match} will be replaced by {i}")
+                            #logging.debug(f"In line {n}, replaced {link_confluence} with {link_html_file}.")
+                            #logging.debug(f"{find_match} will be replaced by {i}")
                         if link_pageid not in conf_pageids:
                             conf_pageids.append(link_pageid)
                     all_tfile_lines.append(line)
                 else:
                     all_tfile_lines.append(line)
             tfile.writelines(all_tfile_lines)
-        print(f"Created {out_filename}")
+            logging.debug(f"Created {out_filename}")
     #    with open(path_and_name, 'w') as file:
     #        file.writelines(all_file_lines)
         # write the file out
@@ -118,8 +130,8 @@ if file_type == '.rst':
             for n in conf_pageids:
                 file.write(str(n) + '\n')
 
-print(f"Created the file \"{conf_pageids_filename}\" with {len(conf_pageids)} entries")
-# These are the Confluence links that I need to convert
+    logging.info(f"Created the file \"{conf_pageids_filename}\" with {len(conf_pageids)} entries")
+    # These are the Confluence links that I need to convert
 
     # Now I need to collect every .rst file name, as each includes
 
@@ -145,7 +157,7 @@ elif file_type == '.html':
             if meta_item:
                 my_html_pageid = meta_item.attrs['content']
                 html_pageids.update({str(my_html_pageid) : str(filename)})
-                print(f"{str(my_html_pageid)} : {str(filename)}")
+                logging.debug(f"{str(my_html_pageid)} : {str(filename)}")
     #
     # ROUND 2
     # go through all files again and replace confluence URLs with the local filenames
@@ -176,7 +188,7 @@ elif file_type == '.html':
                     page_id = key
                     break
             if page_id is None:
-                print(f"WARNING: Could not find page id for page {filename}")
+                logging.warn(f"WARNING: Could not find page id for page {filename}")
 
             for a in soup.findAll('a', href=True):
                 href = a['href']
@@ -196,21 +208,21 @@ elif file_type == '.html':
                                 found = True
                                 break
                         if not found:
-                            print(f"WARNING: Could not find page id for {filename}")
+                            logging.warn(f"WARNING: Could not find page id for {filename}")
 
                     elif re.match(f".*{site}.atlassian.net/wiki/spaces/.*/?$", href):
-                        print(f"WARNING: Found space link in {filename} ({page_id}): {href}")
+                        logging.warn(f"WARNING: Found space link in {filename} ({page_id}): {href}")
                     else: # match == None
-                        print(f"WARNING: invalid href found in page {filename} ({page_id}): {href}")
+                        logging.warn(f"WARNING: invalid href found in page {filename} ({page_id}): {href}")
                 elif 'http://' in href or 'https://' in href:
-                    print(f"INFO: external href found in page {filename}_{page_id}: {href}")
+                    logging.info(f"INFO: external href found in page {filename}_{page_id}: {href}")
 
                 a['href'] = href
                 
             pretty_html = soup.prettify()
             html_file = open(out_path_and_name, 'w', encoding='utf-8')
             html_file.write(pretty_html)
-            print(f"Created {out_filename}")
+            logging.debug(f"Created {out_filename}")
     #    with open(path_and_name, 'w') as file:
     #        file.writelines(all_file_lines)
         # write the file out
