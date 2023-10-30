@@ -17,8 +17,13 @@ Nonetheless, the refactoring will require only 2 files and accept command-line a
   * `-x, --sphinx`: The `_images` and `_static` folders are placed at the root of the export folder, instead of together with the exported HTML files.
   * `--notags`: Does not add the tags directives to the rst files (when the `sphinx-tags` addon is not used).
 * `updatePageLinks.py`: Update online confluence links to the local files that have been downloaded so far.
+  * `-m, --mode`: The export file-mode, `rst` or `html`. Default is `rst`.
+  * `-S, --site`: The Atlassian Site (required).
   * `--folder`: Folder containing the files to update.
   * `--test`: Instead of overwriting the original .rst files, it will create updated ones with `zout_` as a prefix.
+  * `--loglevel`: Changes the logging level. Available levels: `critical`, `error`, `warning`, `info` or `debug`.
+  * `--logformat`: Modifies the format of the output messages. See [logging](https://docs.python.org/library/logging.html#logrecord-attributes) for more information.
+  * `--logfile`: Write the output messages to the specified file instead of the output stream. Example: `--logfile output\export.log`.
 * `getPageEditorVersion.py`: Get the editor version from single pages or all pages in a space.
   * `--site`: The Atlassian Site (required).
   * `--page`: Page ID (either/or)
