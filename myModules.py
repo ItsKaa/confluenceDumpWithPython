@@ -429,7 +429,7 @@ def dump_html(
                         page_link = (f"{page_title}_{page_id}.html").replace(" ","-").replace("+","-")
                     else:
                         page_link = page_title + ".html"
-                    page_link = page_link.replace("/","-").replace(":","-").replace(" ","_")
+                    page_link = remove_illegal_characters_html_file(page_link)
                     breadcrumbs.append({"name": page_title, "url": page_link})
                     found = True
                     break
