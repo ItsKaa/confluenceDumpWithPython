@@ -1,5 +1,6 @@
 import os.path
 import argparse
+import logging
 import myModules
 
 """Dump Confluence content using Python
@@ -46,25 +47,37 @@ parser.add_argument('--no-rst', action='store_false', dest="rst", default=True,
                     help='Disable .rst file in export', required=False)
 parser.add_argument('--showlabels', action='store_true', default=False,
                     help='Export .rst files with the page labels at the bottom', required=False)
+parser.add_argument('--loglevel', default='debug',
+                    choices=['critical', 'error', 'warning', 'info', 'debug'],
+                    help='Provide logging level. Example --loglevel debug, default=warning')
+parser.add_argument('--logformat',
+                    help='Provide the logging format. See the documentation of the logging module for more details.')
+parser.add_argument('--logfile',
+                    help='Specifies the file that will be used for the logging rather than the standard output stream.')
 
 args = parser.parse_args()
+if args.logfile is None:
+    logging.basicConfig(level=args.loglevel.upper(), format=args.logformat)
+else:
+    logging.basicConfig(level=args.loglevel.upper(), format=args.logformat, filename=args.logfile)
+
 atlassian_site = args.site
 sphinx_tags = args.tags
 sphinx_compatible = args.sphinx
 confluence_compatible = args.confluence
 
 if args.mode == 'single':
-    print(f"Exporting a single page (Sphinx set to {args.sphinx})")
+    logging.info(f"Exporting a single page (Sphinx set to {args.sphinx})")
     page_id = args.page
 elif args.mode == 'space':
-    print(f"Exporting a whole space (Sphinx set to {args.sphinx})")
+    logging.info(f"Exporting a whole space (Sphinx set to {args.sphinx})")
     space_key = args.space
 elif args.mode == 'recursive':
-    print(f"Exporting a single page recursively (Sphinx set to {args.sphinx})")
+    logging.info(f"Exporting a single page recursively (Sphinx set to {args.sphinx})")
 elif args.mode == 'bylabel':
-    print(f"Exporting all pages with a common label (Sphinx set to {args.sphinx})")
+    logging.info(f"Exporting all pages with a common label (Sphinx set to {args.sphinx})")
 elif args.mode == 'pageprops':
-    print(f"Exporting a Page Properties page with all its children (Sphinx set to {args.sphinx})")
+    logging.info(f"Exporting a Page Properties page with all its children (Sphinx set to {args.sphinx})")
 
 my_attachments = []
 my_embeds = []
@@ -75,8 +88,8 @@ my_emoticons_list = []
 user_name = os.environ["atlassianUserEmail"]
 api_token = os.environ["atlassianAPIToken"]
 
-print("Sphinx set to " + str(sphinx_compatible))
-print(f"Confluence compatible set to : {confluence_compatible}")
+logging.debug("Sphinx set to " + str(sphinx_compatible))
+logging.debug(f"Confluence compatible set to : {confluence_compatible}")
 atlassian_site = args.site
 my_outdir_base = args.outdir
 if args.mode == 'single':
@@ -126,9 +139,9 @@ if args.mode == 'single':
     my_outdirs = []
     my_outdirs = myModules.mk_outdirs(my_outdir_base, page_id, confluence_compatible)               # attachments, embeds, scripts
     my_page_labels = myModules.get_page_labels(atlassian_site,page_id,user_name,api_token)
-    print(f"Base export folder is \"{my_outdir_base}\" and the Content goes to \"{my_outdir_content}\"")
+    logging.debug(f"Base export folder is \"{my_outdir_base}\" and the Content goes to \"{my_outdir_content}\"")
     myModules.dump_html(atlassian_site,my_body_export_view_html,my_body_export_view_title,page_id,my_outdir_base, my_outdir_content,my_page_labels,page_parent,user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst,arg_space_pages_short=all_pages_short,arg_confluence_compatible=confluence_compatible)
-    print("Done!")
+    logging.info("Done!")
 
 if args.mode == 'recursive':
     ###############
@@ -174,7 +187,7 @@ if args.mode == 'recursive':
     my_outdirs = []
     my_outdirs = myModules.mk_outdirs(my_outdir_base, page_id, confluence_compatible)               # attachments, embeds, scripts
     my_page_labels = myModules.get_page_labels(atlassian_site,page_id,user_name,api_token)
-    print(f"Base export folder is \"{my_outdir_base}\" and the Content goes to \"{my_outdir_content}\"")
+    logging.debug(f"Base export folder is \"{my_outdir_base}\" and the Content goes to \"{my_outdir_content}\"")
     
     all_pages_recursive = []
     for p in all_pages_short:
@@ -202,14 +215,14 @@ if args.mode == 'recursive':
         my_body_export_view_html = my_body_export_view['body']['export_view']['value']
         my_body_export_view_name = p['pageTitle']
         my_body_export_view_title = p['pageTitle']
-        print()
-        print(f"Getting page #{page_counter}/{len(all_pages_short)}, {my_body_export_view_title}, {p['page_id']}")
+        logging.debug("")
+        logging.debug(f"Getting page #{page_counter}/{len(all_pages_short)}, {my_body_export_view_title}, {p['page_id']}")
         my_body_export_view_labels = myModules.get_page_labels(atlassian_site,p['page_id'],user_name,api_token)
         #my_body_export_view_labels = ",".join(myModules.get_page_labels(atlassian_site,p['page_id'],user_name,api_token))
         mypage_url = f"{my_body_export_view['_links']['base']}{my_body_export_view['_links']['webui']}"
-        print(f"dump_html arg sphinx_compatible = {sphinx_compatible}")
+        logging.debug(f"dump_html arg sphinx_compatible = {sphinx_compatible}")
         myModules.dump_html(atlassian_site,space_key,my_body_export_view_html,my_body_export_view_title,p['page_id'],my_outdir_base,my_outdir_content,my_body_export_view_labels,p['parentId'],user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst,arg_space_pages_short=(all_pages_short if relative_links else []),arg_confluence_compatible=confluence_compatible)
-    print("Done!")
+    logging.info("Done!")
 
 elif args.mode == 'space':
     ###########
@@ -228,7 +241,7 @@ elif args.mode == 'space':
             'spaceDescription' : n['description'],
             })
         if (n['key'] == space_key) or n['key'] == str.upper(space_key) or n['key'] == str.lower(space_key):
-            print("Found space: " + n['key'])
+            logging.debug("Found space: " + n['key'])
             space_id = n['id']
             space_name = n['name']
             current_parent = n['homepageId']
@@ -241,11 +254,11 @@ elif args.mode == 'space':
     if args.sphinx is False:
         my_outdir_base = my_outdir_content
 
-    #print("my_outdir_base: " + my_outdir_base)
-    #print("my_outdir_content: " + my_outdir_content)
+    #logging.debug("my_outdir_base: " + my_outdir_base)
+    #logging.debug("my_outdir_content: " + my_outdir_content)
 
     if space_key == "" or space_key is None:                                          # if the supplied space key can't be found
-        print("Could not find Space Key in this site")
+        logging.warn("Could not find Space Key in this site")
     else:
         space_title = myModules.get_space_title(atlassian_site,space_id,user_name,api_token)
         #
@@ -264,7 +277,7 @@ elif args.mode == 'space':
                 }
             )
         # put it all together
-        print(f"{len(all_pages_short)} pages to export")
+        logging.debug(f"{len(all_pages_short)} pages to export")
         page_counter = 0
         for p in all_pages_short:
             page_counter = page_counter + 1
@@ -272,14 +285,14 @@ elif args.mode == 'space':
             my_body_export_view_html = my_body_export_view['body']['export_view']['value']
             my_body_export_view_name = p['pageTitle']
             my_body_export_view_title = p['pageTitle']
-            print()
-            print(f"Getting page #{page_counter}/{len(all_pages_short)}, {my_body_export_view_title}, {p['page_id']}")
+            logging.debug("")
+            logging.debug(f"Getting page #{page_counter}/{len(all_pages_short)}, {my_body_export_view_title}, {p['page_id']}")
             my_body_export_view_labels = myModules.get_page_labels(atlassian_site,p['page_id'],user_name,api_token)
             #my_body_export_view_labels = ",".join(myModules.get_page_labels(atlassian_site,p['page_id'],user_name,api_token))
             mypage_url = f"{my_body_export_view['_links']['base']}{my_body_export_view['_links']['webui']}"
-            print(f"dump_html arg sphinx_compatible = {sphinx_compatible}")
+            logging.debug(f"dump_html arg sphinx_compatible = {sphinx_compatible}")
             myModules.dump_html(atlassian_site,my_body_export_view_html,my_body_export_view_title,p['page_id'],my_outdir_base,my_outdir_content,my_body_export_view_labels,p['parentId'],user_name,api_token,sphinx_compatible,sphinx_tags,arg_html_output=args.html,arg_rst_output=args.rst,arg_space_pages_short=all_pages_short,arg_confluence_compatible=confluence_compatible)
-    print("Done!")
+    logging.debug("Done!")
 elif args.mode == 'pageprops':
     ###############
     ## PAGEPROPS ##
@@ -306,7 +319,7 @@ elif args.mode == 'pageprops':
     #
     # Get Page Properties REPORT
     #
-    print("Getting Page Properties Report Details")
+    logging.debug("Getting Page Properties Report Details")
     my_report_export_view = myModules.get_body_export_view(atlassian_site,page_id,user_name,api_token).json()
     my_report_export_view_title = my_report_export_view['title'].replace("/","-").replace(",","").replace("&","And").replace(":","-")
     my_report_export_view_html = my_report_export_view['body']['export_view']['value']
@@ -321,8 +334,8 @@ elif args.mode == 'pageprops':
         my_outdir_content = os.path.join(my_outdir_base,space_key)
     else:
         my_outdir_content = os.path.join(my_outdir_base,str(page_id) + "-" + str(my_report_export_view_title))
-    #print("my_outdir_base: " + my_outdir_base)
-    #print("my_outdir_content: " + my_outdir_content)
+    #logging.debug("my_outdir_base: " + my_outdir_base)
+    #logging.debug("my_outdir_content: " + my_outdir_content)
     if args.sphinx is False:
         my_outdir_base = my_outdir_content
 
@@ -338,14 +351,14 @@ elif args.mode == 'pageprops':
     page_counter = 0
     for p in my_page_properties_children:
         page_counter = page_counter + 1
-        #print("Handling child: " + p)
+        #logging.debug("Handling child: " + p)
         my_child_export_view = myModules.get_body_export_view(atlassian_site,p,user_name,api_token).json()
         my_child_export_view_html = my_child_export_view['body']['export_view']['value']
         my_child_export_view_name = my_page_properties_children_dict[p]['Name']
         my_child_export_view_labels = myModules.get_page_labels(atlassian_site,p,user_name,api_token)
         my_child_export_view_title = my_child_export_view['title']      ##.replace("/","-").replace(":","-").replace(" ","_")
-        print(f"Getting Child page #{page_counter}/{len(my_page_properties_children)}, {my_child_export_view_title}, {my_page_properties_children_dict[str(p)]['ID']}")
-        #print("Getting Child page #" + str(page_counter) + '/' + str(len(my_page_properties_children)) + ', ' + my_child_export_view_title + ', ' + my_page_properties_children_dict[str(p)]['ID'])
+        logging.debug(f"Getting Child page #{page_counter}/{len(my_page_properties_children)}, {my_child_export_view_title}, {my_page_properties_children_dict[str(p)]['ID']}")
+        #logging.debug("Getting Child page #" + str(page_counter) + '/' + str(len(my_page_properties_children)) + ', ' + my_child_export_view_title + ', ' + my_page_properties_children_dict[str(p)]['ID'])
         my_child_export_page_url = f"{my_child_export_view['_links']['base']}{my_child_export_view['_links']['webui']}"
         #my_child_export_page_url = str(my_child_export_view['_links']['base']) + str(my_child_export_view['_links']['webui'])
         my_child_export_page_parent = myModules.get_page_parent(atlassian_site,p,user_name,api_token)
@@ -393,6 +406,6 @@ elif args.mode == 'pageprops':
             arg_space_pages_short=all_pages_short,
             arg_confluence_compatible=confluence_compatible
         )         # finally creating the HTML for the report page
-    print("Done!")
+    logging.info("Done!")
 else:
-    print("No script mode defined in the command line")
+    logging.error("No script mode defined in the command line")

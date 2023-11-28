@@ -1,3 +1,4 @@
+import logging
 import shutil
 import requests
 import os.path
@@ -171,13 +172,13 @@ def get_attachments(arg_site,arg_page_id,arg_outdir_attach,arg_username,arg_api_
         attachment_title = remove_illegal_characters(requests.utils.unquote(attachment['title']).replace(" ","_").replace(":","-"))         # I want attachments without spaces
         attachment_file_path = os.path.join(arg_outdir_attach,attachment_title)
         if not os.path.exists(attachment_file_path):
-            print(f"Downloading: {attachment_title}")
+            logging.debug(f"Downloading: {attachment_title}")
             try:
                 attachment_url = f"https://{arg_site}.atlassian.net/wiki{attachment['_links']['download']}"
                 request_attachment = requests.get(attachment_url, auth=(arg_username, arg_api_token),allow_redirects=True,timeout=30)
                 open(attachment_file_path, 'wb').write(request_attachment.content)
             except:
-                print(f"WARNING: Skipping attachment file {attachment_file_path} due to issues. url: {attachment_url}")
+                logging.warn(f"WARNING: Skipping attachment file {attachment_file_path} due to issues. url: {attachment_url}")
         my_attachments_list.append(attachment_title)
     return(my_attachments_list)
 
@@ -188,9 +189,9 @@ def get_page_labels(arg_site,arg_page_id,arg_username,arg_api_token):
     response = requests.get(server_url, auth=(arg_username,arg_api_token),timeout=30).json()
     for l in response['results']:
         html_labels.append(l['name'])
-        print(f"Label: {l['name']}")
+        logging.debug(f"Label: {l['name']}")
     html_labels = ", ".join(html_labels)
-    print(f"Page labels: {html_labels}")
+    logging.debug(f"Page labels: {html_labels}")
     return(html_labels)
 
 def get_page_properties_children(arg_site,arg_html,arg_outdir,arg_username,arg_api_token):
@@ -207,7 +208,7 @@ def get_page_properties_children(arg_site,arg_html,arg_outdir,arg_username,arg_a
         my_page_properties_children_dict.update({ my_page_id:{}})
         my_page_properties_children_dict[my_page_id].update({"ID": my_page_id})
         my_page_properties_children_dict[my_page_id].update({"Name": my_page_name})
-    print( f"{my_page_properties_items_counter} Page Properties Children Pages")
+    logging.debug( f"{my_page_properties_items_counter} Page Properties Children Pages")
     return[my_page_properties_children,my_page_properties_children_dict]
 
 def get_editor_version(arg_site,arg_page_id,arg_username,arg_api_token):
@@ -325,7 +326,7 @@ def dump_html(
                 open(my_embed_external_path,'wb').write(to_download.content)
             img = Image.open(my_embed_external_path)
         except:
-            print(f"WARNING: Skipping embed file {my_embed_external_path} due to issues. url: {orig_embed_external_path}")
+            logging.warn(f"WARNING: Skipping embed file {my_embed_external_path} due to issues. url: {orig_embed_external_path}")
         else:
             if img is not None:
                 if img.width < 600:
@@ -343,7 +344,7 @@ def dump_html(
     # dealing with "confluence-embedded-image"
     #
     my_embeds = soup.findAll('img',class_=re.compile("^confluence-embedded-image"))
-    print(str(len(my_embeds)) + " embedded images.")
+    logging.debug(str(len(my_embeds)) + " embedded images.")
     for embed in my_embeds:
         orig_embed_path = embed['src']        # online link to file
         orig_embed_name = orig_embed_path.rsplit('/',1)[-1].rsplit('?')[0]      # online file name
@@ -360,7 +361,7 @@ def dump_html(
                 open(my_embed_path,'wb').write(to_download.content)
             img = Image.open(my_embed_path)
         except:
-            print(f"WARNING: Skipping embed file {my_embed_path} due to issues. url: {orig_embed_path}")
+            logging.warn(f"WARNING: Skipping embed file {my_embed_path} due to issues. url: {orig_embed_path}")
         else:
             if img is not None:
                 if img.width < 600:
@@ -375,7 +376,7 @@ def dump_html(
     # dealing with "emoticon" and expands' "grey_arrow_down.png"
     #
     my_emoticons = soup.findAll('img',class_=re.compile("emoticon|expand-control-image"))
-    print(f"{len(my_emoticons)} emoticons.")
+    logging.debug(f"{len(my_emoticons)} emoticons.")
     for emoticon in my_emoticons:
         my_emoticon_title = emoticon['src'].rsplit('/',1)[-1]     # just filename
         if arg_sphinx_compatible == True:
@@ -384,7 +385,7 @@ def dump_html(
             my_emoticon_path = f"{my_vars['emoticons_dir']}{my_emoticon_title}"
         if my_emoticon_title not in my_emoticons_list:
             my_emoticons_list.append(my_emoticon_title)
-            print(f"Getting emoticon: {my_emoticon_title}")
+            logging.debug(f"Getting emoticon: {my_emoticon_title}")
             file_path = os.path.join(my_outdirs[1],remove_illegal_characters(my_emoticon_title))
             if not os.path.exists(file_path):
                 emoticon_src = emoticon['src']
@@ -392,7 +393,7 @@ def dump_html(
                     request_emoticons = requests.get(emoticon_src, auth=(arg_username, arg_api_token))
                     open(file_path, 'wb').write(request_emoticons.content)
                 except:
-                    print(f"WARNING: Skipping emoticon file {file_path} due to issues. url: {emoticon_src}")
+                    logging.warn(f"WARNING: Skipping emoticon file {file_path} due to issues. url: {emoticon_src}")
         emoticon['src'] = my_emoticon_path
 
     my_body_export_view = get_body_export_view(arg_site,arg_page_id,arg_username,arg_api_token).json()
@@ -434,7 +435,7 @@ def dump_html(
                     found = True
                     break
             if not found:
-                print(f"WARNING: Could not find parent page with id {parent_id} for breadcrumbs")
+                logging.warn(f"WARNING: Could not find parent page with id {parent_id} for breadcrumbs")
                 break
             else:
                 parent_id = space_page['parentId']
@@ -496,7 +497,7 @@ def dump_html(
     html_file.write(myFooter)
     html_file.close()
     if arg_html_output == True:
-        print(f"Exported HTML file {html_file_path}")
+        logging.info(f"Exported HTML file {html_file_path}")
     #
     # convert html to rst
     #
@@ -508,7 +509,7 @@ def dump_html(
     try:
         output_rst = pypandoc.convert_file(str(html_file_path), 'rst', format='html',extra_args=['--standalone','--wrap=none','--list-tables'])
     except:
-        print("There was an issue generating an RST file from the page.")
+        logging.warn("There was an issue generating an RST file from the page.")
     else:
         ##
         ## RST Header with Page Metadata
@@ -541,6 +542,6 @@ def dump_html(
         rst_file.write(output_rst)
         rst_file.write(footer_rst)
         rst_file.close()
-        print(f"Exported RST file: {rst_file_path}")
+        logging.info(f"Exported RST file: {rst_file_path}")
         if arg_html_output == False:
             os.remove(html_file_path)
